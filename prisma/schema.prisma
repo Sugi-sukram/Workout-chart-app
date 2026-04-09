@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  passwordHash    String
+  displayName     String?
+  photoUrl        String?
+  gender          String?
+  dateOfBirth     String?
+  height          Float?
+  weight          Float?
+  goal            String?
+  activityLevel   String?
+  experienceLevel String?
+  equipment       String[] @default([])
+  dietaryPrefs    String[] @default([])
+  unitSystem      String   @default("metric")
+  theme           String   @default("system")
+  notifications   Boolean  @default(true)
+  language        String   @default("en")
+  isOnboarded     Boolean  @default(false)
+  refreshToken    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workouts         Workout[]
+  workoutTemplates WorkoutTemplate[]
+  nutritionLogs    NutritionLog[]
+  dailyWaters      DailyWater[]
+  macroGoal        MacroGoal?
+  bodyMetrics      BodyMetric[]
+  gamification     UserGamification?
+  xpEvents         XPEvent[]
+  userAchievements UserAchievement[]
+  subscription     Subscription?
+  customFoodItems  FoodItem[]        @relation("CreatedFoodItems")
+}
+
+model Workout {
+  id              String    @id @default(uuid())
+  userId          String
+  name            String
+  templateId      String?
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  durationSeconds Int?
+  totalVolume     Float?
+  totalSets       Int?
+  totalReps       Int?
+  exerciseCount   Int?
+  xpEarned        Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template  WorkoutTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  exercises WorkoutExercise[]
+}
+
+model WorkoutExercise {
+  id            String  @id @default(uuid())
+  workoutId     String
+  exerciseId    String
+  orderIndex    Int
+  supersetGroup String?
+  notes         String?
+
+  workout  Workout      @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise     @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  sets     WorkoutSet[]
+}
+
+model WorkoutSet {
+  id                String  @id @default(uuid())
+  workoutExerciseId String
+  setNumber         Int
+  weight            Float?
+  reps              Int?
+  duration          Int?
+  distance          Float?
+  rpe               Float?
+  rir               Int?
+  isWarmup          Boolean @default(false)
+  isDropSet         Boolean @default(false)
+  isFailure         Boolean @default(false)
+  completed         Boolean @default(false)
+  restSeconds       Int?
+
+  workoutExercise WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+}
+
+model Exercise {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  primaryMuscles   String[] @default([])
+  secondaryMuscles String[] @default([])
+  category         String
+  equipment        String[] @default([])
+  difficulty       String
+  instructions     String[] @default([])
+  tips             String[] @default([])
+  imageUrls        String[] @default([])
+  videoUrl         String?
+  isCompound       Boolean  @default(false)
+  isUnilateral     Boolean  @default(false)
+
+  workoutExercises WorkoutExercise[]
+}
+
+model FoodItem {
+  id          String  @id @default(uuid())
+  name        String
+  brand       String?
+  servingSize Float
+  servingUnit String
+  calories    Float
+  protein     Float
+  carbs       Float
+  fat         Float
+  fiber       Float   @default(0)
+  sugar       Float   @default(0)
+  sodium      Float   @default(0)
+  barcode     String?
+  imageUrl    String?
+  isCustom    Boolean @default(false)
+  isVerified  Boolean @default(false)
+  createdBy   String?
+
+  creator       User?          @relation("CreatedFoodItems", fields: [createdBy], references: [id], onDelete: SetNull)
+  nutritionLogs NutritionLog[]
+}
+
+model NutritionLog {
+  id           String   @id @default(uuid())
+  userId       String
+  date         DateTime @db.Date
+  mealType     String
+  foodItemId   String
+  servingCount Float    @default(1)
+  loggedAt     DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodItem FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+}
+
+model DailyWater {
+  id      String   @id @default(uuid())
+  userId  String
+  date    DateTime @db.Date
+  waterMl Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model MacroGoal {
+  id       String @id @default(uuid())
+  userId   String @unique
+  calories Int    @default(2000)
+  protein  Int    @default(150)
+  carbs    Int    @default(200)
+  fat      Int    @default(67)
+  fiber    Int    @default(30)
+  waterMl  Int    @default(3000)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BodyMetric {
+  id         String   @id @default(uuid())
+  userId     String
+  date       DateTime @db.Date
+  weight     Float?
+  bodyFat    Float?
+  chest      Float?
+  waist      Float?
+  hips       Float?
+  leftArm    Float?
+  rightArm   Float?
+  leftThigh  Float?
+  rightThigh Float?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model UserGamification {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  totalXp        Int       @default(0)
+  level          Int       @default(1)
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActiveDate DateTime? @db.Date
+  weeklyStreak   Int       @default(0)
+  dailyXpEarned  Int       @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model XPEvent {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String
+  xpAmount    Int
+  description String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  iconUrl     String?
+  category    String
+  xpReward    Int     @default(0)
+  target      Int     @default(1)
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String    @id @default(uuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime?
+  progress      Float     @default(0)
+  current       Int       @default(0)
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+}
+
+model Subscription {
+  id                   String    @id @default(uuid())
+  userId               String    @unique
+  tier                 String    @default("free")
+  expiresAt            DateTime?
+  isTrial              Boolean   @default(false)
+  trialStartedAt       DateTime?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  purchasePlatform     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WorkoutTemplate {
+  id                String   @id @default(uuid())
+  userId            String?
+  name              String
+  description       String?
+  category          String?
+  exercisesJson     Json     @default("[]")
+  estimatedDuration Int?
+  difficulty        String?
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workouts Workout[]
+}
