@@ -26,6 +26,7 @@ model User {
   theme           String   @default("system")
   notifications   Boolean  @default(true)
   language        String   @default("en")
+  role            String   @default("user")
   isOnboarded     Boolean  @default(false)
   refreshToken    String?
   createdAt       DateTime @default(now())

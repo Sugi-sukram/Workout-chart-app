@@ -40,6 +40,7 @@ export function authMiddleware(
     req.user = {
       userId: decoded.userId,
       email: decoded.email,
+      role: (decoded as any).role || 'user',
     };
 
     next();
@@ -100,6 +101,22 @@ export function optionalAuthMiddleware(
     // Token is invalid but that's fine for optional auth
     next();
   }
+}
+
+/**
+ * Admin-only middleware. Must be used AFTER authMiddleware.
+ * Checks if req.user.role === 'admin'.
+ */
+export function adminMiddleware(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void {
+  if (!req.user || req.user.role !== 'admin') {
+    next(new UnauthorizedError('Admin access required'));
+    return;
+  }
+  next();
 }
 
 export default authMiddleware;

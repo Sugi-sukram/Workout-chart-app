@@ -43,7 +43,7 @@ export async function signup(
     return newUser;
   });
 
-  const tokens = generateTokenPair(user.id, user.email);
+  const tokens = generateTokenPair(user.id, user.email, user.role);
   const hashedRefresh = await bcrypt.hash(tokens.refreshToken, BCRYPT_ROUNDS);
   await prisma.user.update({
     where: { id: user.id },
@@ -70,7 +70,7 @@ export async function login(email: string, password: string) {
     throw new UnauthorizedError('Invalid email or password');
   }
 
-  const tokens = generateTokenPair(user.id, user.email);
+  const tokens = generateTokenPair(user.id, user.email, user.role);
   const hashedRefresh = await bcrypt.hash(tokens.refreshToken, BCRYPT_ROUNDS);
   await prisma.user.update({
     where: { id: user.id },
@@ -104,7 +104,7 @@ export async function refreshTokens(refreshToken: string) {
     throw new UnauthorizedError('Invalid refresh token');
   }
 
-  const tokens = generateTokenPair(user.id, user.email);
+  const tokens = generateTokenPair(user.id, user.email, user.role);
   const hashedRefresh = await bcrypt.hash(tokens.refreshToken, BCRYPT_ROUNDS);
   await prisma.user.update({
     where: { id: user.id },
@@ -124,15 +124,15 @@ export async function logout(userId: string) {
   });
 }
 
-export function generateTokenPair(userId: string, email: string) {
+export function generateTokenPair(userId: string, email: string, role: string = 'user') {
   const accessToken = jwt.sign(
-    { userId, email } as TokenPayload,
+    { userId, email, role } as TokenPayload & { role: string },
     config.jwt.secret,
     { expiresIn: config.jwt.accessTokenExpiry }
   );
 
   const refreshToken = jwt.sign(
-    { userId, email } as TokenPayload,
+    { userId, email, role } as TokenPayload & { role: string },
     config.jwt.refreshSecret,
     { expiresIn: config.jwt.refreshTokenExpiry }
   );
