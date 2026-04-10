@@ -141,9 +141,7 @@ export function errorHandler(
 
   res.status(500).json({
     error: {
-      message: config.isProduction
-        ? 'Internal server error'
-        : err.message || 'Internal server error',
+      message: err.message || 'Internal server error',
       code: 'INTERNAL_ERROR',
     },
   } satisfies ErrorResponse);
