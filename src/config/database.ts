@@ -5,19 +5,20 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// Always pass URL explicitly - fixes cloud deployments where schema env() fails
+const dbUrl = process.env.DATABASE_URL || config.database.url;
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: config.isDevelopment
       ? ['query', 'info', 'warn', 'error']
       : ['error'],
-    datasources: config.database.url
-      ? {
-          db: {
-            url: config.database.url,
-          },
-        }
-      : undefined,
+    datasources: {
+      db: {
+        url: dbUrl,
+      },
+    },
   });
 
 if (!config.isProduction) {
