@@ -113,6 +113,8 @@ model Exercise {
   videoUrl         String?
   isCompound       Boolean  @default(false)
   isUnilateral     Boolean  @default(false)
+  animationType    String?
+  animationData    Json?
 
   workoutExercises WorkoutExercise[]
 }
